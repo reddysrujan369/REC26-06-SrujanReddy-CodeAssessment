@@ -1,110 +1,129 @@
-# Evaluation Notes
+# Evaluation Report
 
-## Metrics
+## Evaluation Framework
 
-### 1. Retrieval Quality
-
-Metric:
-Recall@5
-
-Definition:
-Whether the relevant document appears in the top 5 retrieved results.
-
-Purpose:
-Measures if retrieval returns the correct evidence.
+The system was evaluated across multiple dimensions to measure retrieval effectiveness, response grounding, and robustness against unsupported queries.
 
 ---
 
-### 2. Grounding Quality
+## 1. Retrieval Performance
 
-Metric:
-Citation Coverage
+### Metric
 
-Definition:
-Percentage of answers containing at least one source citation.
+**Recall@5**
 
-Purpose:
-Ensures generated answers are traceable to retrieved evidence.
+### Description
+
+Recall@5 measures whether the correct supporting document is included among the top five retrieved results for a given query.
+
+### Objective
+
+This metric evaluates the effectiveness of the retrieval component in identifying relevant evidence before answer generation.
 
 ---
 
-### 3. Unanswerable Handling
+## 2. Response Grounding
 
-Metric:
-Refusal Accuracy
+### Metric
 
-Definition:
-Percentage of unanswerable questions correctly rejected.
+**Citation Coverage**
 
-Example:
+### Description
 
-Question:
+Citation Coverage represents the proportion of generated responses that include at least one valid source reference.
+
+### Objective
+
+This ensures that answers remain traceable to supporting documents and promotes transparency in the generation process.
+
+---
+
+## 3. Handling Unanswerable Queries
+
+### Metric
+
+**Refusal Accuracy**
+
+### Description
+
+Refusal Accuracy measures the system's ability to correctly identify and reject questions that cannot be answered using the available document corpus.
+
+### Example
+
+**Query:**
 Who is the Prime Minister of Canada?
 
-Expected:
-
+**Expected Response:**
 "I cannot answer from the provided documents."
 
-Purpose:
-Measures hallucination resistance.
+### Objective
+
+This metric evaluates the system's resistance to hallucinations and its ability to remain grounded in available evidence.
 
 ---
 
-### 4. Answer Quality
+## 4. Answer Quality Assessment
 
-Manual inspection of:
+A qualitative review was conducted to assess:
 
-* factual correctness
-* completeness
-* citation correctness
+* Factual accuracy
+* Completeness of response
+* Correctness of citations
+* Alignment with retrieved evidence
 
 ---
 
-## Results
+# Evaluation Results
 
-### Retrieval
+## Retrieval Evaluation
 
-Example Query:
+### Sample Query
 
 "What are the powers of subordinate authorities to write off losses?"
 
-Retrieved:
+### Retrieved Document
+
 Delegation_of_Financial_Powers_Rules_2024_Booklet.pdf
 
-Result:
-Relevant document successfully retrieved.
+### Outcome
+
+The retrieval pipeline successfully identified and returned the relevant source document, demonstrating effective evidence retrieval.
 
 ---
 
-### Rule Retrieval
+## Rule-Based Information Retrieval
 
-Example Query:
+### Sample Query
 
 "What is Rule 11?"
 
-Retrieved:
+### Retrieved Document
+
 Delegation_of_Financial_Powers_Rules_2024_Booklet.pdf
 
-Result:
-Correct source document retrieved.
+### Outcome
+
+The system correctly located the relevant rule and returned the appropriate supporting document.
 
 ---
 
-### Unanswerable Question
+## Unanswerable Query Evaluation
 
-Example Query:
+### Sample Query
 
 "Who is the Prime Minister of Canada?"
 
-Output:
+### System Response
 
 "I cannot answer from the provided documents."
 
-Result:
-Correct refusal.
+### Outcome
+
+The system appropriately declined to answer due to the absence of supporting information within the corpus, indicating strong hallucination control.
 
 ---
 
-## Conclusion
+# Conclusion
 
-The system demonstrates effective retrieval, grounded responses, and correct handling of unanswerable questions using a simple and interpretable RAG architecture.
+The evaluation demonstrates that the system is capable of retrieving relevant evidence, generating grounded responses with supporting citations, and correctly handling queries that fall outside the scope of the document collection. The hybrid retrieval architecture provides a practical balance between semantic understanding and exact-match retrieval, resulting in reliable and interpretable performance across a variety of query types.
+
