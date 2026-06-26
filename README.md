@@ -1,113 +1,162 @@
-# Defence Procurement RAG System
+# Defence Procurement Intelligence System
 
 ## Overview
 
-This project implements a Retrieval-Augmented Generation (RAG) system over a corpus of defence procurement and financial policy documents.
+This project implements an intelligent document-question answering system for defence procurement and financial policy documents. The solution combines document retrieval and large language model (LLM) reasoning to provide accurate, context-aware answers grounded in official policy sources.
 
-The system ingests PDF documents, chunks them into retrievable units, generates embeddings, stores them in a FAISS vector index, retrieves relevant context for a query, and generates grounded answers with citations.
+The system processes a collection of PDF documents, extracts and structures their contents, indexes them for efficient retrieval, and generates responses supported by relevant source citations.
 
 ---
 
-## Architecture
+## System Architecture
 
+```text
 PDF Documents
-↓
-Text Extraction (PyPDF)
-↓
+      │
+      ▼
+Document Extraction (PyPDF)
+      │
+      ▼
 Rule-Aware Chunking
-↓
-Sentence Embeddings (all-MiniLM-L6-v2)
-↓
+      │
+      ▼
+Sentence Embedding Generation
+      │
+      ▼
 FAISS Vector Index
-↓
-BM25 Retrieval
-↓
-Hybrid Ranking
-↓
-LLM Answer Generation
-↓
-Citations
+      │
+      ▼
+BM25 Lexical Retrieval
+      │
+      ▼
+Hybrid Retrieval & Ranking
+      │
+      ▼
+LLM-Based Answer Generation
+      │
+      ▼
+Answer with Source Citations
+```
 
 ---
 
-## Design Choices
+## Key Design Decisions
 
-### Chunking
+### Rule-Aware Chunking
 
-A rule-aware chunking strategy was used.
+Government and defence policy documents are typically organized around numbered rules, sections, and clauses. Instead of using fixed-size text chunks, the system preserves these natural boundaries during chunking.
 
-Government policy documents are naturally structured into numbered rules (Rule 1, Rule 2, etc.). Splitting documents around rule boundaries preserves semantic meaning better than fixed-size chunks.
+This approach:
+
+* Maintains contextual integrity
+* Improves retrieval relevance
+* Produces more meaningful citations
+* Reduces information fragmentation
+
+---
 
 ### Embedding Model
 
-Model:
-all-MiniLM-L6-v2
+**Model:** `all-MiniLM-L6-v2`
 
-Reason:
+#### Rationale
 
-* Fast
-* Lightweight
-* Strong semantic retrieval performance
-* Suitable for several hundred documents
-
-### Vector Store
-
-FAISS IndexFlatIP
-
-Reason:
-
-* Fast similarity search
-* Simple implementation
-* Widely used baseline for RAG systems
-
-### Retrieval
-
-Hybrid Retrieval:
-
-* Semantic Retrieval (FAISS)
-* Lexical Retrieval (BM25)
-
-Reason:
-Government documents contain many exact references such as rule numbers, financial limits, and procurement categories. BM25 improves retrieval of these exact terms.
-
-### Top-K
-
-k = 5
-
-The top five retrieved chunks are provided to the answer generation stage.
+* Lightweight and computationally efficient
+* Fast embedding generation
+* Strong semantic search performance
+* Well-suited for medium-sized document collections
 
 ---
 
-## Handling Unanswerable Questions
+### Vector Storage
 
-The system is instructed to answer only from retrieved context.
+**Technology:** FAISS (`IndexFlatIP`)
 
-If sufficient evidence is not present in the retrieved documents, the system returns:
+#### Rationale
 
-"I cannot answer from the provided documents."
-
-This reduces hallucination and ensures grounded responses.
+* High-performance similarity search
+* Simple and reliable implementation
+* Industry-standard retrieval baseline
+* Scales efficiently for document search workloads
 
 ---
 
-## Running
+### Retrieval Strategy
 
-### Build Index
+The system adopts a hybrid retrieval approach by combining:
 
+* **Semantic Retrieval (FAISS)** – captures contextual meaning and intent
+* **Lexical Retrieval (BM25)** – captures exact keywords, rule references, and numerical values
+
+#### Benefits
+
+Defence procurement policies often contain:
+
+* Rule numbers
+* Financial thresholds
+* Procurement categories
+* Regulatory references
+
+BM25 excels at retrieving exact matches, while semantic search improves understanding of user intent. Combining both methods improves overall retrieval quality.
+
+---
+
+### Context Selection
+
+The top **5** highest-ranked document chunks are selected and provided to the language model as supporting evidence.
+
+This balances:
+
+* Retrieval accuracy
+* Response quality
+* Computational efficiency
+* Token consumption
+
+---
+
+## Handling Unanswerable Queries
+
+To ensure trustworthy responses, the language model is instructed to answer exclusively from retrieved evidence.
+
+When sufficient information is unavailable within the document corpus, the system returns:
+
+> "I cannot answer from the provided documents."
+
+This approach minimizes hallucinations and ensures that generated responses remain grounded in verifiable source material.
+
+---
+
+## Execution
+
+### Build the Retrieval Index
+
+```bash
 python src/ingest.py
+```
 
-### Query
+### Run Queries
 
+```bash
 python src/query.py
+```
 
 ---
 
-## Future Improvements
+## Future Enhancements
 
-If additional time were available:
+Potential improvements include:
 
-1. Cross-encoder reranking
-2. Better citation granularity
-3. Automatic evaluation pipeline
-4. Metadata filtering by document
-5. Query expansion for rule references
+1. Cross-encoder re-ranking for improved retrieval precision
+2. Fine-grained citation generation at paragraph or clause level
+3. Automated evaluation framework and benchmarking
+4. Metadata-based filtering and document categorization
+5. Query expansion techniques for policy and rule references
+6. Retrieval performance analytics and monitoring
+7. Multi-document reasoning optimization
+
+---
+
+## Outcome
+
+The resulting system provides a scalable and reliable framework for navigating complex defence procurement policies, enabling users to obtain accurate, evidence-backed answers while maintaining transparency through source citations.
+
