@@ -4,46 +4,61 @@ import faiss
 import numpy as np
 
 from dotenv import load_dotenv
-
 from sentence_transformers import SentenceTransformer
-
 from rank_bm25 import BM25Okapi
-
 import google.generativeai as genai
 
-import os
+# -------------------------
+# Load Environment Variables
+# -------------------------
 
-print("API KEY:", os.getenv("GEMINI_API_KEY"))
+load_dotenv()
+
+API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not API_KEY:
+    raise ValueError(
+        "GEMINI_API_KEY not found in .env file"
+    )
+
+print("Gemini API Key Loaded Successfully")
 
 # -------------------------
 # Gemini Setup
 # -------------------------
 
-load_dotenv()
-
-API_KEY = os.getenv(
-    "GEMINI_API_KEY"
-)
-
-genai.configure(
-    api_key=API_KEY
-)
+genai.configure(api_key=API_KEY)
 
 llm = genai.GenerativeModel(
     "gemini-2.5-flash"
 )
 
+# Quick API Test
+
+try:
+    test_response = llm.generate_content(
+        "Hello"
+    )
+    print("Gemini Connection Successful")
+except Exception as e:
+    print("Gemini Error:", e)
+    exit()
+
 # -------------------------
 # Load Embedding Model
 # -------------------------
+
+print("Loading Embedding Model...")
 
 embed_model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )
 
 # -------------------------
-# Load FAISS
+# Load FAISS Index
 # -------------------------
+
+print("Loading FAISS Index...")
 
 index = faiss.read_index(
     "index/faiss.index"
@@ -53,18 +68,18 @@ with open(
     "index/metadata.pkl",
     "rb"
 ) as f:
-
     metadata = pickle.load(f)
 
 with open(
     "index/chunks.pkl",
     "rb"
 ) as f:
-
     all_chunks = pickle.load(f)
 
+print(f"Loaded {len(all_chunks)} chunks")
+
 # -------------------------
-# BM25
+# BM25 Setup
 # -------------------------
 
 tokenized_chunks = [
@@ -77,9 +92,8 @@ bm25 = BM25Okapi(
 )
 
 # -------------------------
-# Retrieval
+# Hybrid Retrieval
 # -------------------------
-
 
 def retrieve(question, k=5):
 
@@ -109,6 +123,9 @@ def retrieve(question, k=5):
         semantic_ids[0]
     ):
 
+        if idx < 0:
+            continue
+
         combined_scores[idx] = (
             0.7 * float(score)
             + 0.3 * float(bm25_scores[idx])
@@ -124,7 +141,7 @@ def retrieve(question, k=5):
 
     for idx, score in ranked[:k]:
 
-        doc = metadata[idx]
+        doc = metadata[idx].copy()
 
         doc["score"] = score
 
@@ -132,11 +149,9 @@ def retrieve(question, k=5):
 
     return top_docs
 
-
 # -------------------------
 # Answer Generation
 # -------------------------
-
 
 def answer(question):
 
@@ -147,7 +162,9 @@ def answer(question):
     for d in docs:
 
         print(
-            f"Doc: {d['doc']} | Chunk: {d['chunk_id']} | Score: {d['score']:.4f}"
+            f"Document: {d['doc']} | "
+            f"Chunk: {d['chunk_id']} | "
+            f"Score: {d['score']:.4f}"
         )
 
     print("\n===============================\n")
@@ -161,25 +178,29 @@ def answer(question):
         sources.add(d["doc"])
 
         context += f"""
-
 SOURCE: {d['doc']}
 CHUNK: {d['chunk_id']}
 
 {d['text']}
 
+----------------------------------------
 """
 
     prompt = f"""
 You are a document QA assistant.
 
-Answer ONLY from the supplied context.
+Use ONLY the provided context.
 
-If the answer is not present,
+If the answer cannot be found in the context,
 reply exactly:
 
 I cannot answer from the provided documents.
 
-Always provide citations.
+Whenever information is used,
+cite the source document.
+
+Example:
+[Source: document_name.pdf]
 
 Context:
 
@@ -198,12 +219,10 @@ Question:
 
     final_answer += "\n\nSources:\n"
 
-    for s in sorted(sources):
-
-        final_answer += f"- {s}\n"
+    for source in sorted(sources):
+        final_answer += f"- {source}\n"
 
     return final_answer
-
 
 # -------------------------
 # CLI
@@ -211,19 +230,28 @@ Question:
 
 if __name__ == "__main__":
 
+    print("\nHybrid RAG Ready")
+    print("Type 'exit' to quit")
+
     while True:
 
-        q = input("\nQuestion: ")
+        question = input(
+            "\nQuestion: "
+        ).strip()
 
-        if q.lower() == "exit":
+        if question.lower() == "exit":
             break
-
-        print("\n")
 
         try:
 
-            print(answer(q))
+            result = answer(question)
+
+            print("\nAnswer:\n")
+            print(result)
 
         except Exception as e:
 
-            print("Error:", e)
+            print(
+                "\nError:",
+                str(e)
+            )
