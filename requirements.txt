@@ -1,0 +1,10 @@
+faiss-cpu
+sentence-transformers
+google-generativeai
+pypdf
+numpy
+pandas
+python-dotenv
+tqdm
+rank-bm25
+scikit-learn
